@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <h1>Sign In</h1>
+    <div class="alerts">
+        <span class="alert_text" style="display: none;">Alert message</span>
+    </div>
+    <form action="/login" method="post">
+        <input type="text" name="login" placeholder="Login" minlength="3">
+        <input type="password" name="password" placeholder="Password" class="password">
+        <input type="submit" value="Sign Up" class="submit">
+    </form>
+
+    <script src="./login.js"></script>
+</body>
+</html>
