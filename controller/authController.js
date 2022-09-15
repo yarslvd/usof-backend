@@ -4,7 +4,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
-const handleErrors = require('../utils/registerErrorHandler');
+const { handleErrors } = require('../utils/registerErrorHandler');
 require('dotenv').config();
 
 const User = new UserClass('users');
@@ -82,7 +82,7 @@ exports.confirmEmail = async (req, res) => {
         }
     }
     catch(err) {
-        res.send('This verification link is no longer reachable');
+        return res.send('This verification link is no longer reachable');
     }
 }
 
@@ -96,10 +96,15 @@ exports.login = async (req, res) => {
         }
 
         //creating token andw writting it in cookies
-        const token = createAccessToken({login: user.login, id: user.id});
+        const token = createAccessToken({login: user.login, id: user.id, role: user.role});
+
         res.cookie('token', token);
 
-        res.redirect('/');
+        if(user.role === 'admin') {
+            return res.redirect('/');
+        }
+
+        return res.json( {message: 'Successfully logged in'} );
     }
     catch(err) {
         return res.json( {message: 'There is no user with such login'} );

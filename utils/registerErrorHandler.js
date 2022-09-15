@@ -43,4 +43,4 @@ function handleErrors(obj) {
     return obj;
 }
 
-module.exports = handleErrors;
+module.exports = { handleErrors, passStrengthChecker, validateUsername };

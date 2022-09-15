@@ -18,7 +18,7 @@ function authenticateToken(req, res, next) {
     }
     catch(err) {
         res.clearCookie("token");
-        return res.redirect('/');
+        res.redirect('/');
     }
 }
 

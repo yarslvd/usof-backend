@@ -21,5 +21,8 @@ router.post('/api/auth/password-reset/:token', authController.confirmPasswordRes
 //USER CONTROLLERS
 router.get('/api/users', authenticateToken, userController.getAllUsers);
 router.get('/api/users/:user_id', authenticateToken, userController.getUser);
+router.post('/api/users', authenticateToken, userController.createUser);
+router.patch('/api/users/:user_id', authenticateToken, userController.updateUserData);
+router.delete('/api/users/:user_id', authenticateToken, userController.deleteUser);
 
 module.exports = router;

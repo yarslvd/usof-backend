@@ -96,4 +96,20 @@ module.exports = class User {
         connection.end();
         return res[0];
     }
+
+    async updateInfo(email, row, data) {
+        let sql = `UPDATE ${this.table} SET ${row}='${data}' WHERE email='${email}';`
+        const connection = db.connect();
+        let res = await connection.promise().query(sql);
+        connection.end();
+        return;
+    }
+
+    async deleteUser(id) {
+        let sql = `DELETE FROM ${this.table} WHERE id='${id}';`
+        const connection = db.connect();
+        let res = await connection.promise().query(sql);
+        connection.end();
+        return;
+    }
 }

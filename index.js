@@ -7,11 +7,11 @@ const path = require('path');
 const { routerAdmin, adminBro } = require('./utils/admin');
 
 app.use(express.urlencoded({extended: true}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(router);
 app.use(adminBro.options.rootPath, routerAdmin);
 app.use(formidableMiddleware());
-app.use(express.json());
-app.use(cookieParser());
-app.use(router);
 
 app.use(express.static(path.resolve(__dirname, 'scripts')));
 app.use(express.static(path.resolve(__dirname, 'resources')));
