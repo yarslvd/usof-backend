@@ -11,7 +11,47 @@ CREATE TABLE IF NOT EXISTS users
     password VARCHAR(100) NOT NULL,
     fullname VARCHAR(50) NOT NULL,
     email VARCHAR(50) NOT NULL UNIQUE,
-    role VARCHAR(10) NOT NULL DEFAULT 'user',
+    role ENUM('admin','user') NOT NULL DEFAULT 'user',
     profile_img VARCHAR(100) NOT NULL DEFAULT 'profile_images/default.jpg',
     rating INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS posts
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    authorID INT NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    publishDate DATE NOT NULL,
+    status BOOLEAN NOT NULL,
+    content TEXT NOT NULL,
+    rating INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (authorID) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS categories
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(40)
+);
+
+CREATE TABLE IF NOT EXISTS posts_categories
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    postID INT NOT NULL,
+    categoryID INT NOT NULL,
+    authorID INT NOT NULL,
+    FOREIGN KEY (postID) REFERENCES posts(id),
+    FOREIGN KEY (categoryID) REFERENCES categories(id),
+    FOREIGN KEY (authorID) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS comments
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    authorID INT NOT NULL,
+    postID INT NOT NULL,
+    publishDate DATE NOT NULL,
+    content TEXT NOT NULL,
+    FOREIGN KEY (authorID) REFERENCES users(id),
+    FOREIGN KEY (postID) REFERENCES posts(id)
 );
