@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controller/authController');
 const userController = require('../controller/userController');
+const postController = require('../controller/postController');
 const { authenticateToken } = require("../utils/jwt");
 
 //pages
@@ -25,4 +26,10 @@ router.post('/api/users', authenticateToken, userController.createUser);
 router.patch('/api/users/:user_id', authenticateToken, userController.updateUserData);
 router.delete('/api/users/:user_id', authenticateToken, userController.deleteUser);
 
+//POST CONTROLLER
+router.get('/api/posts', postController.getAllPosts);
+router.get('/api/posts/:post_id', postController.getPost);
+router.get('/api/posts/:post_id/comments', postController.getComments);
+router.post('/api/posts/:post_id/comments', authenticateToken, postController.addComment);
+router.get('/api/posts/:post_id/categories', authenticateToken, postController.getCategories);
 module.exports = router;

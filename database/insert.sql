@@ -7,13 +7,13 @@ VALUES
 ('limix', 'password3', 'Ihor Doroshenko', 'idoroshenko@gmail.com', 'user'),
 ('daripon', 'darino4ka', 'Darina Udod', 'dudod@gmail.com', 'user');
 
-INSERT INTO posts (authorID, title, publishDate, status, content)
+INSERT INTO posts (authorID, title, publishDate, content, status)
 VALUES
-(1, 'Hello', '2022-09-10', 1, 'Whats up?'),
-(2, 'Hello', '2022-09-10', 1, 'Im a new here'),
-(3, 'How to use it', '2022-09-12', 1,'What is the main idea of this community?'),
-(3, 'C++ error', '2022-09-12', 1,'Can you explain this'),
-(3, 'New admin', '2022-09-15', 1,'I need new admin for');
+(1, 'Hello', '2022-09-10', 'Whats up?', 1),
+(2, 'Hello', '2022-09-10', 'Im a new here', 1),
+(3, 'How to use it', '2022-09-12', 'What is the main idea of this community?', 1),
+(3, 'C++ error', '2022-09-12', 'Can you explain this', 1),
+(3, 'New admin', '2022-09-15', 'I need new admin for', 1);
 
 INSERT INTO comments (authorID, postID, publishDate, content)
 VALUES
@@ -30,11 +30,18 @@ VALUES
 ('WORLD NEWS DISCUSS'),
 ('COMPUTER / DEVELOP');
 
-INSERT INTO posts_categories (postID, categoryID, authorID)
+INSERT INTO posts_categories (postID, categoryID)
 VALUES
-(1, 1, 1),
-(2, 1, 4),
-(3, 2, 3),
-(3, 1, 2),
-(4, 3, 2),
-(5, 4, 2);
+(1, 1),
+(2, 1),
+(3, 2),
+(3, 1),
+(4, 3),
+(5, 4);
+
+INSERT INTO postsLikes (authorID, postID, publishDate, type)
+VALUES
+(1, 2, '2022-09-12', 'like'),
+(3, 1, '2022-09-12', 'like'),
+(2, 1, '2022-09-12', 'dislike'),
+(1, 3, '2022-09-12', 'like');

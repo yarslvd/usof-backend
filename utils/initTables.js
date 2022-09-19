@@ -18,16 +18,16 @@ const users = sequelize.define('users', {
         allowNull: false,
     },
     fullname: {
-        type: DataTypes.STRING(50),
+        type: DataTypes.STRING(200),
         allowNull: false,
     },
     email: {
-        type: DataTypes.STRING(50),
+        type: DataTypes.STRING(64),
         allowNull: false,
         unique: true,
     },
     role: {
-        type: DataTypes.STRING(10),
+        type: Sequelize.ENUM("user", "admin"),
         allowNull: false,
         defaultValue: "user",
     },
@@ -54,7 +54,10 @@ const posts = sequelize.define('posts', {
     },
     authorID: {
         type: DataTypes.INTEGER,
-        primaryKey: true
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
     title: {
         type: DataTypes.STRING(100),
@@ -64,12 +67,12 @@ const posts = sequelize.define('posts', {
         type: Sequelize.DATEONLY,
         allowNull: false
     },
-    status: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false
-    },
     content: {
         type: Sequelize.TEXT,
+        allowNull: false
+    },
+    status: {
+        type: Sequelize.BOOLEAN,
         allowNull: false
     },
     rating: {
@@ -102,15 +105,19 @@ const posts_categories = sequelize.define('posts_categories', {
     },
     postID: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'posts',
+            key: 'id'
+        }
     },
     categoryID: {
         type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    authorID: {
-        type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'categories',
+            key: 'id'
+        }
     }
 }, {
     timestamps: false
@@ -124,11 +131,19 @@ const comments = sequelize.define('comments', {
     },
     authorID: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
     postID: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'posts',
+            key: 'id'
+        }
     },
     publishDate: {
         type: Sequelize.DATEONLY,
@@ -142,13 +157,67 @@ const comments = sequelize.define('comments', {
     timestamps: false
 });
 
-// Adding foreign keys
-//posts_categories.belongsTo(users);
+const postsLikes = sequelize.define('postsLikes', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    authorID: {
+        type: DataTypes.INTEGER,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
+    postID: {
+        type: DataTypes.INTEGER,
+        references: {
+            model: 'posts',
+            key: 'id'
+        }
+    },
+    publishDate: {
+        type: Sequelize.DATEONLY,
+        allowNull: false
+    },
+    type: {
+        type: Sequelize.ENUM("like", "dislike")
+    },
+}, {
+    timestamps: false
+});
 
-categories.belongsToMany(posts, {through: posts_categories});
-posts.belongsToMany(categories, {through: posts_categories});
-
-//posts.belongsTo(users);
+const commentsLikes = sequelize.define('commentsLikes', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    authorID: {
+        type: DataTypes.INTEGER,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
+    commentID: {
+        type: DataTypes.INTEGER,
+        references: {
+            model: 'comments',
+            key: 'id'
+        }
+    },
+    publishDate: {
+        type: Sequelize.DATEONLY,
+        allowNull: false
+    },
+    type: {
+        type: Sequelize.ENUM("like", "dislike")
+    },
+}, {
+    timestamps: false
+});
 
 sequelize.sync().then(() => {
     console.log('Book table created successfully!');
@@ -156,4 +225,4 @@ sequelize.sync().then(() => {
     console.error('Unable to create table : ', error);
 });
 
-module.exports = { users, posts, categories, posts_categories, comments };
+module.exports = { users, posts, categories, posts_categories, comments, commentsLikes, postsLikes };
