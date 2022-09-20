@@ -13,4 +13,12 @@ module.exports = class User {
         const data = await table.findAndCountAll(condition);
         return data;
     }
+
+    async create(table, info) {
+        await table.create(info);
+    }
+    
+    async update(table, info, condition) {
+        await table.update(info, condition);
+    }
 }

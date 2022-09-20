@@ -32,4 +32,9 @@ router.get('/api/posts/:post_id', postController.getPost);
 router.get('/api/posts/:post_id/comments', postController.getComments);
 router.post('/api/posts/:post_id/comments', authenticateToken, postController.addComment);
 router.get('/api/posts/:post_id/categories', authenticateToken, postController.getCategories);
+router.get('/api/posts/:post_id/like', authenticateToken, postController.getLikes);
+router.post('/api/posts/', authenticateToken, postController.createPost);
+router.post('/api/posts/:post_id/like', authenticateToken, postController.addLike);
+router.patch('/api/posts/:post_id', authenticateToken, postController.editPost);
+
 module.exports = router;

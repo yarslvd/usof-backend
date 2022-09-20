@@ -44,11 +44,10 @@ exports.getComments = async (req, res) => {
 
 exports.addComment = async (req, res) => {
     let obj = parseJwt(req.cookies.token);
-    const user = await User.findOne(users, { where: { id: obj.id } });
-    const date = new Date().toISOString().substring(0, 19).replace('T', ' ');
+    const date = getCurrentDate();
 
     try {
-        await comments.create({ authorID: user.dataValues.id, postID: req.params.post_id, publishDate: date, content: req.body.content});
+        await User.create(comments, { authorID: obj.id, postID: req.params.post_id, publishDate: date, content: req.body.content});
         return res.send('Comment has been successfully added');
     }
     catch(err) {
@@ -59,8 +58,8 @@ exports.addComment = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
     try {
-        let result = await User.findOne(posts_categories, { where: { postID: req.params.post_id }});
-        result = await User.findAll(categories, { where: { id:result.categoryID } });
+        let result = await User.findAll(posts_categories, { where: { postID: req.params.post_id }});
+        result = await User.findAll(categories, { where: { id:result.map(el => el.dataValues.categoryID) } });
         return res.json(result.map(el => el.name));
     }
     catch(err) {
@@ -71,16 +70,73 @@ exports.getCategories = async (req, res) => {
 
 exports.getLikes = async (req, res) => {
     try {
-        //let result = await User.findAll(postsLikes, { where: { } })
+        let result = await User.findAll(postsLikes, { where: { postID: req.params.post_id } });
+        return res.json(result);
     }
     catch(err) {
         console.error(err);
     }
 }
 
+exports.createPost = async (req, res) => {
+    let obj = parseJwt(req.cookies.token);
+    try {
+        await User.create(posts, { authorID: obj.id, title: req.body.title, 
+            publishDate: getCurrentDate(), content: req.body.content, status: 1} );
+        return res.send('Post successfully created');
+    }
+    catch(err) {
+        console.error(err);
+        return res.send('Some error happened while creating the post');
+    }
+}
+
+exports.addLike = async (req, res) => {
+    let obj = parseJwt(req.cookies.token);
+
+    let check = await User.findOne(postsLikes, { where: { authorID: obj.id, postID: req.params.post_id } });
+    if(check !== null) {
+        return res.send('You have already liked this post');
+    }
+
+    try {
+        await User.create(postsLikes, { authorID: obj.id, postID: req.params.post_id, publishDate: getCurrentDate(), type: 'like' } );
+        return res.send('You have successfully liked the post');
+    }
+    catch(err) {
+        console.error(err);
+        return res.send('Some error happened while adding like to this post');
+    }
+}
+
+exports.editPost = async (req, res) => {
+    let obj = parseJwt(req.cookies.token);
+
+    let check = await User.findOne(posts, { where: { id: +req.params.post_id, authorID: obj.id } });
+
+    if(check !== null) {
+        try {
+            await User.update(posts, { title: req.body.title, content: req.body.content, status: req.body.status }, { where: { id: +req.params.post_id } });
+            return res.send('Your post has been successfully updated');
+        }
+        catch(err) {
+            console.error(err);
+            return res.send('Some error happened while editing the post');
+        }
+    }
+    else {
+        return res.send('There is no such post or you are not the author');
+    }
+}
 
 
 
+
+
+
+function getCurrentDate() {
+    return new Date().toISOString().substring(0, 19).replace('T', ' ');
+}
 
 const getPagingData = (data, page, limit) => {
     const { count: totalItems, rows: posts } = data;
