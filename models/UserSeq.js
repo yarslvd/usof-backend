@@ -21,4 +21,8 @@ module.exports = class User {
     async update(table, info, condition) {
         await table.update(info, condition);
     }
+
+    async delete(table, condition) {
+        await table.destroy(condition);
+    }
 }

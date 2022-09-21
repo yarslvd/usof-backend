@@ -1,4 +1,4 @@
-const { posts, comments, users, posts_categories, categories, postsLikes } = require('../utils/initTables');
+const { posts, comments, posts_categories, categories, postsLikes } = require('../utils/initTables');
 const UserClass = require('../models/UserSeq');
 const { parseJwt } = require('../utils/jwt');
 
@@ -29,7 +29,6 @@ exports.getPost = async (req, res) => {
 
 exports.getComments = async (req, res) => {
     const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
-    console.log(post);
     if(post === null) {
         return res.send('Such post has not been found');
     }
@@ -129,7 +128,36 @@ exports.editPost = async (req, res) => {
     }
 }
 
+// ADD DELTE POST AS A ADMIN
+exports.deletePost = async (req, res) => {
+    let check = await User.findOne(posts, { where: { id: +req.params.post_id, authorID: req.user.id } });
 
+    if(check !== null) {
+        try {
+            await User.delete(posts, { where: { id: +req.params.post_id } });
+            return res.send('Post has been successfully deleted');
+        }
+        catch(err) {
+            console.error(err);
+            res.send('Some error happened while deleting the post');
+        }
+    }
+    else {
+        return res.send('You have no permission to delete this post');
+    }
+}
+
+exports.deleteLike = async (req, res) => {
+    let check = await User.findOne(postsLikes, { where: { authorID: req.user.id, postID: +req.params.post_id, type: 'like' } });
+
+    if(check !== null) {
+        await User.delete(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } });
+        return res.send('You have successfully deleted the like');
+    }
+    else {
+        return res.send('You have not liked this post');
+    }
+}
 
 
 

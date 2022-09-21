@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require('../controller/authController');
 const userController = require('../controller/userController');
 const postController = require('../controller/postController');
+const categoryController = require('../controller/categoryController');
 const { authenticateToken } = require("../utils/jwt");
 
 //pages
@@ -36,5 +37,15 @@ router.get('/api/posts/:post_id/like', authenticateToken, postController.getLike
 router.post('/api/posts/', authenticateToken, postController.createPost);
 router.post('/api/posts/:post_id/like', authenticateToken, postController.addLike);
 router.patch('/api/posts/:post_id', authenticateToken, postController.editPost);
+router.delete('/api/posts/:post_id', authenticateToken, postController.deletePost);
+router.delete('/api/posts/:post_id/like', authenticateToken, postController.deleteLike);
+
+//CATEGORY CONTROLLER
+router.get('/api/categories', authenticateToken, categoryController.getAllCategories);
+router.get('/api/categories/:category_id', authenticateToken, categoryController.getCategory);
+router.get('/api/categories/:category_id/posts', authenticateToken, categoryController.getPostsCategory);
+router.post('/api/categories', authenticateToken, categoryController.createCategory);
+router.patch('/api/categories/:category_id', authenticateToken, categoryController.editCategory);
+router.delete('/api/categories/:category_id', authenticateToken, categoryController.deleteCategory);
 
 module.exports = router;
