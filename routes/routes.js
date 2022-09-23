@@ -4,6 +4,7 @@ const authController = require('../controller/authController');
 const userController = require('../controller/userController');
 const postController = require('../controller/postController');
 const categoryController = require('../controller/categoryController');
+const commentController = require('../controller/commentController');
 const { authenticateToken } = require("../utils/jwt");
 
 //pages
@@ -12,7 +13,7 @@ router.get('/signup', authController.signUpPage);
 router.get('/login', authController.loginPage);
 
 
-//AUTH CONTROLLERS
+//AUTH CONTROLLERS=
 router.post('/api/auth/register', authController.register);
 router.post('/api/auth/confirm/:token', authController.confirmEmail);
 router.post('/api/auth/login', authController.login);
@@ -47,5 +48,13 @@ router.get('/api/categories/:category_id/posts', authenticateToken, categoryCont
 router.post('/api/categories', authenticateToken, categoryController.createCategory);
 router.patch('/api/categories/:category_id', authenticateToken, categoryController.editCategory);
 router.delete('/api/categories/:category_id', authenticateToken, categoryController.deleteCategory);
+
+//COMMENT CONTROLLER
+router.get('/api/comments/:comment_id', authenticateToken, commentController.getComment);
+router.get('/api/comments/:comment_id/like', authenticateToken, commentController.getLikesComment);
+router.post('/api/comments/:comment_id/like', authenticateToken, commentController.addCommentLike);
+router.patch('/api/comments/:comment_id', authenticateToken, commentController.editComment);
+router.delete('/api/comments/:comment_id', authenticateToken, commentController.deleteComment);
+router.delete('/api/comments/:comment_id/like', authenticateToken, commentController.deleteLikeComment);
 
 module.exports = router;
