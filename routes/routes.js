@@ -8,12 +8,12 @@ const commentController = require('../controller/commentController');
 const { authenticateToken } = require("../utils/jwt");
 
 //pages
-router.get('/', authenticateToken, authController.homePage);
-router.get('/signup', authController.signUpPage);
-router.get('/login', authController.loginPage);
+// router.get('/', authenticateToken, authController.homePage);
+// router.get('/signup', authController.signUpPage);
+// router.get('/login', authController.loginPage);
 
 
-//AUTH CONTROLLERS=
+//AUTH CONTROLLERS
 router.post('/api/auth/register', authController.register);
 router.post('/api/auth/confirm/:token', authController.confirmEmail);
 router.post('/api/auth/login', authController.login);

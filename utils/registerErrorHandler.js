@@ -7,7 +7,7 @@ function passStrengthChecker(pass) {
 }
 
 function validateEmail(email) {
-    let regExp =   /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+    let regExp = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
     if(!regExp.test(email)) {
         return true;
     }
@@ -43,4 +43,4 @@ function handleErrors(obj) {
     return obj;
 }
 
-module.exports = { handleErrors, passStrengthChecker, validateUsername };
+module.exports = { handleErrors, passStrengthChecker, validateUsername, validateEmail };

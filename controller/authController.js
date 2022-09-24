@@ -1,13 +1,15 @@
-const UserClass = require('../models/User');
+//const UserClass = require('../models/User');
 const { createAccessToken, parseJwt } = require('../utils/jwt');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const { handleErrors } = require('../utils/registerErrorHandler');
+const Op = require('Sequelize').Op
+const { users } = require('../utils/initTables');
+const UserClass = require('../models/UserSeq');
 require('dotenv').config();
 
-const User = new UserClass('users');
+const User = new UserClass();
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -18,11 +20,19 @@ const transporter = nodemailer.createTransport({
 });
 
 exports.register = async (req, res) => {
-    let exists = await User.exists(req.body);
-    if(exists) {
-        return res.json({message:'User is already exists!'});
+    //Check if the user exists
+    try {
+        let exists = await User.findOne(users, { where: { [Op.or]: [{login: req.body.login}, {email: req.body.email}] } });
+        if(exists) {
+            return res.send('User is already exists!');
+        }
+    }
+    catch(err) {
+        console.error(err);
+        return res.send('Some error have occured');
     }
 
+    //Handling basic errors
     try {
         handleErrors(req.body);
     }
@@ -30,7 +40,8 @@ exports.register = async (req, res) => {
         return res.json({message:err});
     }
 
-    const salt = await bcrypt.genSalt(10);
+    //Hashing password
+    const salt = await bcrypt.genSalt(12);
     req.body.password = await bcrypt.hash(req.body.password, salt);
 
     let obj = {
@@ -40,11 +51,12 @@ exports.register = async (req, res) => {
         fullname: req.body.fullname
     }
 
-    //creating confirm token
+    //Creating confirm token
     const token = jwt.sign({obj: obj},
         process.env.SECURE_TOKEN, {expiresIn: '5m'});
     const link = `http://localhost:3000/api/auth/confirm/${token}`
 
+    //Sending message to the mail to confirm
     let message = {
         from: `ydoroshenk <${process.env.MAIL}>`,
         to: req.body.email,
@@ -74,11 +86,12 @@ exports.confirmEmail = async (req, res) => {
         jwt.verify(token, process.env.SECURE_TOKEN);
         try {
             let obj = parseJwt(token).obj;
-            await User.create(obj);
-            return res.json({ message: 'Email confirmed' });
+            await User.create(users, obj);
+            return res.send('Email confirmed');
         }
         catch(err) {
-            return res.json({ message: 'Some error has occured' });
+            console.error(err);
+            return res.json('Some error has occured');
         }
     }
     catch(err) {
@@ -88,41 +101,37 @@ exports.confirmEmail = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const user = await User.find(req.body.login);
+        const user = await User.findOne(users, { where: { login: req.body.login } });
 
+        //Check if the password is correct
         const passCheck = await bcrypt.compare(req.body.password, user.password);
         if(!passCheck) {
-            return res.json( {message: 'Login or password is incorrect'} );
+            return res.send('Login or password is incorrect');
         }
 
-        //creating token andw writting it in cookies
+        //Creating token and writting it in cookies
         const token = createAccessToken({login: user.login, id: user.id, role: user.role});
-
         res.cookie('token', token);
 
-        if(user.role === 'admin') {
-            return res.redirect('/');
-        }
-
-        return res.json( {message: 'Successfully logged in'} );
+        return res.send('Successfully logged in');
     }
     catch(err) {
-        return res.json( {message: 'There is no user with such login'} );
+        return res.send('There is no user with such login');
     }
 }
 
 exports.passwordReset = async (req, res) => {
-    let user = await User.findEmail(req.body.email);
-    if(user === 0) {
-        return res.json('There is no account associated with this email');
+    let user = await User.findOne(users, { where: { email: req.body.email } });
+    if(user === null) {
+        return res.send('There is no account associated with this email');
     }
 
-    //creating confirm token
+    //Creating confirm token
     const token = jwt.sign({email: user.email, id: user.id},
         process.env.SECURE_TOKEN, {expiresIn: '5m'});
-    console.log(token);
-
     const link = `http://localhost:3000/api/auth/password-reset/${token}`
+
+    //Sending the message with link
     let message = {
         from: `ydoroshenk <${process.env.MAIL}>`,
         to: user.email,
@@ -154,26 +163,24 @@ exports.confirmPasswordReset = async (req, res) => {
     try {
         jwt.verify(token, process.env.SECURE_TOKEN);
         if(password != confirmPassword) {
-            return res.json({ message: 'Passwords are different' });
+            return res.send('Passwords are different');
         }
 
         try {
-            const salt = await bcrypt.genSalt(10);
+            const salt = await bcrypt.genSalt(12);
             let encryptedPassword = await bcrypt.hash(password, salt);
-            await User.updatePassword(parseJwt(token).email, encryptedPassword);
-            return res.json({ message: 'Password has been successfully updated'} );
+            await User.update(users, { password: encryptedPassword }, { where: { email: parseJwt(token).email} });
+            return res.send('Password has been successfully updated');
         }
         catch(err) {
-            console.log(err);
-            return res.json({ message: 'Some error has occured' });
+            console.error(err);
+            return res.send('Some error has occured');
         }
     }
     catch(err) {
-        return res.send('User is not verified');
+        return res.send('This link is no longer reachable');
     }
 }
-
-
 
 exports.logout = (req, res) => {
     res.clearCookie('token');
