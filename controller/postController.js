@@ -4,19 +4,58 @@ const { parseJwt } = require('../utils/jwt');
 
 const User = new UserClass();
 
-exports.getAllPosts = (req, res) => {
+exports.getAllPosts = async (req, res) => {
     const { page } = req.query;
     const size = 2;
     const { limit, offset } = getPagination(page, size);
-    
-    User.findAndCountAll(posts, {where: { status: true }, limit, offset})
-        .then(data => {
+    let obj = parseJwt(req.cookies.token);
+
+    if(obj.role === 'admin') {
+        try {
+            let data;
+            if(req.body.sorting == 'dateASC') {
+                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['id', `ASC`]]});
+            }
+            else if(req.body.sorting == 'ratingASC') {
+                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['rating', `ASC`]]});
+            }
+            else if(req.body.sorting == 'ratingDESC') {
+                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['rating', `DESC`]]});
+            }
+            else {
+                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['id', `DESC`]]});
+            }
+            
             const response = getPagingData(data, page, limit);
             return res.send(response);
-        })
-        .catch(err => {
+        }
+        catch(err) {
             return res.sendStatus(500).send('Some error occured while receiving posts');
-        });
+        }
+    }
+    else {
+        try {
+            let data;
+            if(req.body.sorting == 'dateASC') {
+                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['id', 'ASK']]});
+            }
+            else if(req.body.sorting == 'ratingASC') {
+                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['rating', 'ASK']]});
+            }
+            else if(req.body.sorting == 'ratingDESC') {
+                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['rating', 'DESC']]});
+            }
+            else {
+                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['id', 'DESC']]});  
+            }
+
+            const response = getPagingData(data, page, limit);
+            return res.send(response);
+        }
+        catch(err) {
+            return res.sendStatus(500).send('Some error occured while receiving posts');
+        }
+    }
 }
 
 exports.getPost = async (req, res) => {
@@ -113,7 +152,7 @@ exports.editPost = async (req, res) => {
 
     let check = await User.findOne(posts, { where: { id: +req.params.post_id, authorID: obj.id } });
 
-    if(check !== null) {
+    if(check !== null || req.user.role === 'admin') {
         try {
             await User.update(posts, { title: req.body.title, content: req.body.content, status: req.body.status }, { where: { id: +req.params.post_id } });
             return res.send('Your post has been successfully updated');
@@ -132,7 +171,7 @@ exports.editPost = async (req, res) => {
 exports.deletePost = async (req, res) => {
     let check = await User.findOne(posts, { where: { id: +req.params.post_id, authorID: req.user.id } });
 
-    if(check !== null) {
+    if(check !== null || req.user.role === 'admin') {
         try {
             await User.delete(posts, { where: { id: +req.params.post_id } });
             return res.send('Post has been successfully deleted');
@@ -158,7 +197,6 @@ exports.deleteLike = async (req, res) => {
         return res.send('You have not liked this post');
     }
 }
-
 
 
 

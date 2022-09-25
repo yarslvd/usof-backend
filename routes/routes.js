@@ -6,6 +6,7 @@ const postController = require('../controller/postController');
 const categoryController = require('../controller/categoryController');
 const commentController = require('../controller/commentController');
 const { authenticateToken } = require("../utils/jwt");
+const upload = require('../utils/uploadAvatar');
 
 //pages
 // router.get('/', authenticateToken, authController.homePage);
@@ -25,6 +26,7 @@ router.post('/api/auth/password-reset/:token', authController.confirmPasswordRes
 router.get('/api/users', authenticateToken, userController.getAllUsers);
 router.get('/api/users/:user_id', authenticateToken, userController.getUser);
 router.post('/api/users', authenticateToken, userController.createUser);
+router.patch('/api/users/avatar', authenticateToken, upload.single('image'), userController.uploadAvatar);
 router.patch('/api/users/:user_id', authenticateToken, userController.updateUserData);
 router.delete('/api/users/:user_id', authenticateToken, userController.deleteUser);
 

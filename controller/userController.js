@@ -84,6 +84,16 @@ exports.createUser = async (req, res) => {
     }
 }
 
+exports.uploadAvatar = async (req, res) => {
+    try {
+        await User.update(users, { profile_img: `profile_images/${req.file.filename}`}, { where: { id: req.user.id } });
+        res.send('Profile image has been successfully uploaded!');
+    } catch (error) {
+        console.error(error);
+        res.json('Some error happened');
+    }
+}
+
 exports.updateUserData = async (req, res) => {
     if(+req.params.user_id === req.user.id || req.user.role === 'admin') {
         try {
@@ -143,7 +153,6 @@ exports.updateUserData = async (req, res) => {
 }
 
 exports.deleteUser = async (req, res) => {
-    console.log(+req.params.user_id === req.user.id);
     if(+req.params.user_id === req.user.id || req.user.role === 'admin') {
         try {
             let result = await User.delete(users, { where: { id: +req.params.user_id } });
@@ -159,4 +168,8 @@ exports.deleteUser = async (req, res) => {
     else {
         return res.send('You have no access to delete this user');
     }
+}
+
+exports.getCurrentId = (req, res) => {
+    return req.user.id
 }
