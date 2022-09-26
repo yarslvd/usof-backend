@@ -1,6 +1,7 @@
 const { posts, comments, posts_categories, categories, postsLikes } = require('../utils/initTables');
 const UserClass = require('../models/UserSeq');
 const { parseJwt } = require('../utils/jwt');
+const Op = require('Sequelize').Op
 
 const User = new UserClass();
 
@@ -8,53 +9,63 @@ exports.getAllPosts = async (req, res) => {
     const { page } = req.query;
     const size = 2;
     const { limit, offset } = getPagination(page, size);
-    let obj = parseJwt(req.cookies.token);
-
-    if(obj.role === 'admin') {
-        try {
-            let data;
-            if(req.body.sorting == 'dateASC') {
-                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['id', `ASC`]]});
-            }
-            else if(req.body.sorting == 'ratingASC') {
-                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['rating', `ASC`]]});
-            }
-            else if(req.body.sorting == 'ratingDESC') {
-                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['rating', `DESC`]]});
-            }
-            else {
-                data = await User.findAndCountAll(posts, {where: {}, limit, offset, order: [['id', `DESC`]]});
-            }
-            
-            const response = getPagingData(data, page, limit);
-            return res.send(response);
-        }
-        catch(err) {
-            return res.sendStatus(500).send('Some error occured while receiving posts');
-        }
+    let obj;
+    try {
+        obj = parseJwt(req.cookies.token);
     }
-    else {
-        try {
-            let data;
-            if(req.body.sorting == 'dateASC') {
-                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['id', 'ASK']]});
+    catch(err) {
+        console.log(err);
+    }
+    // console.log(Object.values(req.query.sort)[0].toUpperCase());
+
+    try {
+        let data;
+
+        if(!req.query.sort && !req.query.filter) {
+            data = await User.findAndCountAll(posts, {where: { [Op.and] : [ obj.role === 'admin' &&  {}, obj.role === 'user' || !obj.role &&  { status: true } ]},
+            limit, offset, order: [[ 'id', 'DESC' ]] });
+        }
+
+        if(req.query.sort || req.query.filter) {
+            if(req.query.sort && !req.query.filter) {
+                data = await User.findAndCountAll(posts, {where: { [Op.and] : [ obj.role === 'admin' &&  {}, obj.role === 'user' || !obj.role &&  { status: true } ]},
+                limit, offset, order: [[ Object.keys(req.query.sort)[0], Object.values(req.query.sort)[0].toUpperCase() ]] });
             }
-            else if(req.body.sorting == 'ratingASC') {
-                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['rating', 'ASK']]});
-            }
-            else if(req.body.sorting == 'ratingDESC') {
-                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['rating', 'DESC']]});
+            else if(!req.query.sort && req.query.filter) {
+                let conditions = Object.assign({}, req.query.filter);
+                if(obj.role == 'user') {
+                    conditions['status'] = true;
+                }
+                if(conditions.category) {
+                    let result = await User.findAll(posts_categories, { where: { categoryID: +conditions.category } });
+                    delete conditions.category;
+                    conditions.id = result.map(el => el.dataValues.id);
+                }
+
+                data = await User.findAndCountAll(posts, {where: conditions,
+                limit, offset, order: [[ 'id', 'DESC' ]] });
             }
             else {
-                data = await User.findAndCountAll(posts, {where: { status: true }, limit, offset, order: [['id', 'DESC']]});  
-            }
+                let conditions = Object.assign({}, req.query.filter);
+                if(obj.role == 'user') {
+                    conditions['status'] = true;
+                }
+                if(conditions.category) {
+                    let result = await User.findAll(posts_categories, { where: { categoryID: +conditions.category } });
+                    delete conditions.category;
+                    conditions.id = result.map(el => el.dataValues.id);
+                }
 
-            const response = getPagingData(data, page, limit);
-            return res.send(response);
+                data = await User.findAndCountAll(posts, { where: conditions,
+                limit, offset, order: [[ Object.keys(req.query.sort)[0], Object.values(req.query.sort)[0].toUpperCase() ]] });
+            }
         }
-        catch(err) {
-            return res.sendStatus(500).send('Some error occured while receiving posts');
-        }
+        
+        const response = getPagingData(data, page, limit);
+        return res.send(response);
+    }
+    catch(err) {
+        return res.sendStatus(500).send('Some error occured while receiving posts');
     }
 }
 
