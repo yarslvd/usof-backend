@@ -1,4 +1,4 @@
-const { posts, comments, posts_categories, categories, postsLikes } = require('../utils/initTables');
+const { posts, comments, posts_categories, categories, postsLikes, users } = require('../utils/initTables');
 const UserClass = require('../models/UserSeq');
 const { parseJwt } = require('../utils/jwt');
 const Op = require('Sequelize').Op
@@ -9,55 +9,107 @@ exports.getAllPosts = async (req, res) => {
     const { page } = req.query;
     const size = 2;
     const { limit, offset } = getPagination(page, size);
-    let obj;
-    try {
-        obj = parseJwt(req.cookies.token);
+
+    if(req.query.sort) {
+        if(req.query.sort.id != 'asc' && req.query.sort.id != 'desc' &&
+            req.query.sort.rating != 'asc' && req.query.sort.rating != 'desc') {
+            return res.send('Bad request');
+        }
     }
-    catch(err) {
-        console.log(err);
+
+    if(req.query.filter) {
+        if(req.query.filter.dateFrom || req.query.filter.dateTo) {
+            if(new Date(req.query.filter.dateTo) == 'Invalid Date' || new Date(req.query.filter.dateFrom) == 'Invalid Date') {
+                return res.send('Bad request');
+            }
+        }
+        if(req.query.filter.status != 'inactive' && req.query.filter.status != 'active') {
+            return res.send('Bad request');
+        }
     }
-    // console.log(Object.values(req.query.sort)[0].toUpperCase());
 
     try {
         let data;
 
         if(!req.query.sort && !req.query.filter) {
-            data = await User.findAndCountAll(posts, {where: { [Op.and] : [ obj.role === 'admin' &&  {}, obj.role === 'user' || !obj.role &&  { status: true } ]},
+            data = await User.findAndCountAll(posts, {where: {},
             limit, offset, order: [[ 'id', 'DESC' ]] });
         }
 
         if(req.query.sort || req.query.filter) {
             if(req.query.sort && !req.query.filter) {
-                data = await User.findAndCountAll(posts, {where: { [Op.and] : [ obj.role === 'admin' &&  {}, obj.role === 'user' || !obj.role &&  { status: true } ]},
+                data = await User.findAndCountAll(posts, {where: {},
                 limit, offset, order: [[ Object.keys(req.query.sort)[0], Object.values(req.query.sort)[0].toUpperCase() ]] });
             }
             else if(!req.query.sort && req.query.filter) {
                 let conditions = Object.assign({}, req.query.filter);
-                if(obj.role == 'user') {
-                    conditions['status'] = true;
-                }
                 if(conditions.category) {
                     let result = await User.findAll(posts_categories, { where: { categoryID: +conditions.category } });
                     delete conditions.category;
                     conditions.id = result.map(el => el.dataValues.id);
+                }
+
+                if(conditions.dateFrom && conditions.dateTo) {
+                    conditions.publishDate = { [Op.between] : [conditions.dateFrom, conditions.dateTo] }
+                    delete conditions.dateFrom;
+                    delete conditions.dateTo;
+                }
+                else if(conditions.dateFrom) {
+                    conditions.publishDate = { [Op.gte] : conditions.dateFrom }
+                    delete conditions.dateFrom;
+                }
+                else if(conditions.dateTo) {
+                    conditions.publishDate = { [Op.lte] : conditions.dateTo }
+                    delete conditions.dateTo;
+                }
+
+                if(conditions.status == 'active') {
+                    conditions.status = true;
+                }
+                else if (conditions.status == 'inactive') {
+                    conditions.status = false;
                 }
 
                 data = await User.findAndCountAll(posts, {where: conditions,
-                limit, offset, order: [[ 'id', 'DESC' ]] });
+                    limit, offset, order: [[ 'id', 'DESC' ]] });
             }
             else {
-                let conditions = Object.assign({}, req.query.filter);
-                if(obj.role == 'user') {
-                    conditions['status'] = true;
-                }
-                if(conditions.category) {
-                    let result = await User.findAll(posts_categories, { where: { categoryID: +conditions.category } });
-                    delete conditions.category;
-                    conditions.id = result.map(el => el.dataValues.id);
-                }
+                try {
+                    let conditions = Object.assign({}, req.query.filter);
+                    if(conditions.category) {
+                        let result = await User.findAll(posts_categories, { where: { categoryID: +conditions.category } });
+                        delete conditions.category;
+                        conditions.id = result.map(el => el.dataValues.id);
+                    }
 
-                data = await User.findAndCountAll(posts, { where: conditions,
-                limit, offset, order: [[ Object.keys(req.query.sort)[0], Object.values(req.query.sort)[0].toUpperCase() ]] });
+                    if(conditions.dateFrom && conditions.dateTo) {
+                        conditions.publishDate = { [Op.between] : [conditions.dateFrom, conditions.dateTo] }
+                        delete conditions.dateFrom;
+                        delete conditions.dateTo;
+                    }
+                    else if(conditions.dateFrom) {
+                        conditions.publishDate = { [Op.gte] : conditions.dateFrom }
+                        delete conditions.dateFrom;
+                    }
+                    else if(conditions.dateTo) {
+                        conditions.publishDate = { [Op.lte] : conditions.dateTo }
+                        delete conditions.dateTo;
+                    }
+
+                    if(conditions.status == 'active') {
+                        conditions.status = true;
+                    }
+                    else if (conditions.status == 'inactive') {
+                        conditions.status = false;
+                    }
+
+                    data = await User.findAndCountAll(posts, { where: conditions,
+                        limit, offset, order: [[ Object.keys(req.query.sort)[0], Object.values(req.query.sort)[0].toUpperCase() ]] });
+                }
+                catch(err) {
+                    console.error(err);
+                    return res.send('Some error occured');
+                }
             }
         }
         
@@ -92,11 +144,12 @@ exports.getComments = async (req, res) => {
 }
 
 exports.addComment = async (req, res) => {
-    let obj = parseJwt(req.cookies.token);
-    const date = getCurrentDate();
-
     try {
-        await User.create(comments, { authorID: obj.id, postID: req.params.post_id, publishDate: date, content: req.body.content});
+        let check = await User.findOne(posts, { where: { id: +req.params.post_id, status: true } });
+        if(check === null) {
+            return res.send('Sorry, you can not comment under locked posts');
+        }
+        await User.create(comments, { authorID: req.user.id, postID: +req.params.post_id, publishDate: getCurrentDate(), content: req.body.content});
         return res.send('Comment has been successfully added');
     }
     catch(err) {
@@ -141,15 +194,19 @@ exports.createPost = async (req, res) => {
 }
 
 exports.addLike = async (req, res) => {
-    let obj = parseJwt(req.cookies.token);
-
-    let check = await User.findOne(postsLikes, { where: { authorID: obj.id, postID: req.params.post_id } });
+    let check = await User.findOne(postsLikes, { where: { authorID: req.user.id, postID: +req.params.post_id } });
     if(check !== null) {
         return res.send('You have already liked this post');
     }
 
     try {
-        await User.create(postsLikes, { authorID: obj.id, postID: req.params.post_id, publishDate: getCurrentDate(), type: 'like' } );
+        await User.create(postsLikes, { authorID: req.user.id, postID: +req.params.post_id, publishDate: getCurrentDate(), type: 'like' } );
+
+        let user = await User.findOne(posts, { where: { id: +req.params.post_id} });
+        const { rating } = user.dataValues;
+
+        await User.update(posts, { rating: rating + 1 }, { where: { id: +req.params.post_id } });
+        await User.update(users, { rating: rating + 1 }, { where: { id: req.user.id } });
         return res.send('You have successfully liked the post');
     }
     catch(err) {
@@ -202,6 +259,12 @@ exports.deleteLike = async (req, res) => {
 
     if(check !== null) {
         await User.delete(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } });
+
+        let user = await User.findOne(posts, { where: { id: +req.params.post_id} });
+        const { rating } = user.dataValues;
+
+        await User.update(posts, { rating: rating - 1 }, { where: { id: +req.params.post_id } });
+        await User.update(users, { rating: rating - 1 }, { where: { id: req.user.id } });
         return res.send('You have successfully deleted the like');
     }
     else {
@@ -217,7 +280,7 @@ function getCurrentDate() {
 
 const getPagingData = (data, page, limit) => {
     const { count: totalItems, rows: posts } = data;
-    const currentPage = page ? +page : 0;
+    const currentPage = page ? +page : 1;
     const totalPages = Math.ceil(totalItems / limit);
   
     return { totalItems, posts, totalPages, currentPage };
