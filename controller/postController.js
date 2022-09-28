@@ -202,11 +202,11 @@ exports.addLike = async (req, res) => {
     try {
         await User.create(postsLikes, { authorID: req.user.id, postID: +req.params.post_id, publishDate: getCurrentDate(), type: 'like' } );
 
-        let user = await User.findOne(posts, { where: { id: +req.params.post_id} });
-        const { rating } = user.dataValues;
+        const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+        const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
 
-        await User.update(posts, { rating: rating + 1 }, { where: { id: +req.params.post_id } });
-        await User.update(users, { rating: rating + 1 }, { where: { id: req.user.id } });
+        await User.update(posts, { rating: post.dataValues.rating + 1 }, { where: { id: +req.params.post_id } });
+        await User.update(users, { rating: user.dataValues.rating + 1 }, { where: { id: post.dataValues.authorID } });
         return res.send('You have successfully liked the post');
     }
     catch(err) {
@@ -260,11 +260,11 @@ exports.deleteLike = async (req, res) => {
     if(check !== null) {
         await User.delete(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } });
 
-        let user = await User.findOne(posts, { where: { id: +req.params.post_id} });
-        const { rating } = user.dataValues;
+        const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+        const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
 
-        await User.update(posts, { rating: rating - 1 }, { where: { id: +req.params.post_id } });
-        await User.update(users, { rating: rating - 1 }, { where: { id: req.user.id } });
+        await User.update(posts, { rating: post.dataValues.rating - 1 }, { where: { id: +req.params.post_id } });
+        await User.update(users, { rating: user.dataValues.rating - 1 }, { where: { id: post.dataValues.authorID } });
         return res.send('You have successfully deleted the like');
     }
     else {

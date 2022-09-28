@@ -10,8 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@admin-bro/express": "^3.1.0",
+    "@admin-bro/sequelize": "^1.2.1",
     "admin-bro": "^4.0.1",
-    "admin-bro-expressjs": "^2.1.1",
     "admin-bro-sequelizejs": "^0.5.1",
     "bcrypt": "^5.0.1",
     "cookie-parser": "^1.4.6",
@@ -25,6 +26,7 @@
     "mysql2": "^2.3.3",
     "nodemailer": "^6.7.8",
     "nodemon": "^2.0.19",
-    "sequelize": "^6.21.6"
+    "sequelize": "^6.21.6",
+    "tslib": "^2.4.0"
   }
 }

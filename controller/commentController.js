@@ -1,4 +1,4 @@
-const { comments, commentsLikes } = require('../utils/initTables');
+const { comments, commentsLikes, users } = require('../utils/initTables');
 const UserClass = require('../models/UserSeq');
 
 const User = new UserClass();
@@ -32,9 +32,20 @@ exports.getLikesComment = async (req, res) => {
 }
 
 exports.addCommentLike = async (req, res) => {
+    let check = await User.findOne(commentsLikes, { where: { authorID: req.user.id, commentID: +req.params.comment_id } });
+    if(check !== null) {
+        return res.send('You have already liked this post');
+    }
+
     try {
         await User.create(commentsLikes, { authorID: req.user.id,
             commentID: +req.params.comment_id, publishDate:  getCurrentDate(), type: 'like' });
+
+            let comment = await User.findOne(comments, { where: { id: +req.params.comment_id } });
+            let user = await User.findOne(users, { where: { id: comment.dataValues.authorID}});
+            const { rating } = user.dataValues;
+            await User.update(users, { rating: rating + 1 }, { where: { id: user.dataValues.id } });
+
         return res.send('Like was successfully added');
     }
     catch(err) {
@@ -80,10 +91,20 @@ exports.deleteComment = async (req, res) => {
 
 exports.deleteLikeComment = async (req, res) => {
     let check = await User.findOne(commentsLikes, { where: { commentID: +req.params.comment_id, authorID: req.user.id } });
+    console.log(check);
 
-    if(check !== null || req.user.role == 'admin') {
+    if(check != null || req.user.role == 'admin') {
         try {
+            if(await User.findOne(commentsLikes, { where: { commentID: +req.params.comment_id, authorID: req.user.id } }) == null) {
+                return res.send('There is no like on that comment');
+            }
             await User.delete(commentsLikes, { where: { commentID: +req.params.comment_id, authorID: req.user.id } });
+
+            let comment = await User.findOne(comments, { where: { id: +req.params.comment_id } });
+            let user = await User.findOne(users, { where: { id: comment.dataValues.authorID}});
+            const { rating } = user.dataValues;
+            await User.update(users, { rating: rating - 1 }, { where: { id: user.dataValues.id } });
+
             return res.send('Like has been successfully deleted');
         }
         catch(err) {
