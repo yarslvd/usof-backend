@@ -101,6 +101,7 @@ exports.confirmEmail = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
+        console.log(req.body);
         const user = await User.findOne(users, { where: { login: req.body.login } });
 
         //Check if the password is correct

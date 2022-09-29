@@ -8,6 +8,7 @@ const { routerAdmin, adminBro } = require('./utils/admin');
 require('dotenv').config();
 
 app.use(adminBro.options.rootPath, routerAdmin);
+app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
 app.use(router);

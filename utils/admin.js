@@ -36,43 +36,39 @@ const CommentsParent = {
 const usersOptions = {
   parent: UsersParent,
   properties: {
-    encryptedPassword: {
-      isVisible: false,
-    },
-    password: {
+    newPassword: {
       type: 'string',
       isVisible: {
         list: false, edit: true, filter: false, show: false,
-      },
+      }
+    },
+    password: {
+      isVisible: false,
     }
   },
   actions: {
     new: {
-      before: async(response) => {
-        let password = response.payload.password;
-        console.log(password);
-        let login = response.payload.login;
-        if (!login || login.length < 3) {
-          throw new AdminBro.ValidationError({
-            name: {
-              message: 'Login should contain more than 3 letter',
-            },
-          },{
-            message: 'Some error has occured',
-          })
+      before: async (request) => {
+        if(request.payload.newPassword) {
+          request.payload = {
+            ...request.payload,
+            password: await bcrypt.hash(request.payload.newPassword, 12),
+            newPassword: undefined,
+          }
         }
-        if(!password || password.length < 8) {
-          throw new AdminBro.ValidationError({
-            name: {
-              message: 'Password should contain more than 8 characters',
-            },
-            },{
-              message: 'Some error has occured',
-          })
+        return request
+      }
+    },
+    edit: {
+      before: async (request) => {
+        if(request.payload.newPassword) {
+          request.payload = {
+            ...request.payload,
+            password: await bcrypt.hash(request.payload.newPassword, 12),
+            newPassword: undefined,
+          }
         }
-        response.payload.password = await bcrypt.hash(request.payload.password, 12);
-        console.log(response.payload.password)
-        return response
+        return request
       }
     }
   }
