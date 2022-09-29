@@ -196,23 +196,58 @@ exports.createPost = async (req, res) => {
 exports.addLike = async (req, res) => {
     let check = await User.findOne(postsLikes, { where: { authorID: req.user.id, postID: +req.params.post_id } });
     if(check !== null) {
-        return res.send('You have already liked this post');
+        if(check.dataValues.type === 'like' && req.body.type === 'dislike') {
+            await User.update(postsLikes, { type: 'dislike' }, { where: { authorID: req.user.id, postID: +req.params.post_id } });
+            const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+            const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
+
+            await User.update(posts, { rating: post.dataValues.rating - 2 }, { where: { id: +req.params.post_id } });
+            await User.update(users, { rating: user.dataValues.rating - 2 }, { where: { id: post.dataValues.authorID } });
+            return res.send('You have successfully changed like to dislike');
+        }
+        if(check.dataValues.type === 'dislike' && req.body.type === 'like') {
+            await User.update(postsLikes, { type: 'like' }, { where: { authorID: req.user.id, postID: +req.params.post_id } });
+            const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+            const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
+
+            await User.update(posts, { rating: post.dataValues.rating + 2 }, { where: { id: +req.params.post_id } });
+            await User.update(users, { rating: user.dataValues.rating + 2 }, { where: { id: post.dataValues.authorID } });
+            return res.send('You have successfully changed dislike to like');
+        }
+        if(check.dataValues.type === 'dislike' && req.body.type === 'dislike' ||
+                check.dataValues.type === 'like' && req.body.type === 'like') {
+            return res.send('You have already liked/disliked this post');
+        }
     }
 
     try {
-        await User.create(postsLikes, { authorID: req.user.id, postID: +req.params.post_id, publishDate: getCurrentDate(), type: 'like' } );
+        if(req.body.type === 'like') {
+            await User.create(postsLikes, { authorID: req.user.id, postID: +req.params.post_id, publishDate: getCurrentDate(), type: 'like' } );
 
-        const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
-        const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
+            const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+            const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
 
-        await User.update(posts, { rating: post.dataValues.rating + 1 }, { where: { id: +req.params.post_id } });
-        await User.update(users, { rating: user.dataValues.rating + 1 }, { where: { id: post.dataValues.authorID } });
-        return res.send('You have successfully liked the post');
+            await User.update(posts, { rating: post.dataValues.rating + 1 }, { where: { id: +req.params.post_id } });
+            await User.update(users, { rating: user.dataValues.rating + 1 }, { where: { id: post.dataValues.authorID } });
+            return res.send('Like was successfully added');
+        }
+        if(req.body.type === 'dislike') {
+            await User.create(postsLikes, { authorID: req.user.id, postID: +req.params.post_id, publishDate: getCurrentDate(), type: 'dislike' } );
+
+            const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+            const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
+
+            await User.update(posts, { rating: post.dataValues.rating - 1 }, { where: { id: +req.params.post_id } });
+            await User.update(users, { rating: user.dataValues.rating - 1 }, { where: { id: post.dataValues.authorID } });
+            return res.send('Dislike was successfully added');
+        }
     }
     catch(err) {
         console.error(err);
         return res.send('Some error happened while adding like to this post');
     }
+    
+    return res.send('Please provide like/dislike in JSON');
 }
 
 exports.editPost = async (req, res) => {
@@ -255,17 +290,38 @@ exports.deletePost = async (req, res) => {
 }
 
 exports.deleteLike = async (req, res) => {
-    let check = await User.findOne(postsLikes, { where: { authorID: req.user.id, postID: +req.params.post_id, type: 'like' } });
+    let check = await User.findOne(postsLikes, { where: { authorID: req.user.id, postID: +req.params.post_id } });
 
     if(check !== null) {
-        await User.delete(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } });
-
-        const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
-        const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
-
-        await User.update(posts, { rating: post.dataValues.rating - 1 }, { where: { id: +req.params.post_id } });
-        await User.update(users, { rating: user.dataValues.rating - 1 }, { where: { id: post.dataValues.authorID } });
-        return res.send('You have successfully deleted the like');
+        try{
+            if(await User.findOne(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } }) == null) {
+                return res.send('There is no like on that comment');
+            }
+            if(check.dataValues.type === 'like') {
+                await User.delete(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } });
+    
+                const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+                const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
+        
+                await User.update(posts, { rating: post.dataValues.rating - 1 }, { where: { id: +req.params.post_id } });
+                await User.update(users, { rating: user.dataValues.rating - 1 }, { where: { id: post.dataValues.authorID } });
+                return res.send('You have successfully deleted the like');
+            }
+            if(check.dataValues.type === 'dislike') {
+                await User.delete(postsLikes, { where: { postID: +req.params.post_id, authorID: req.user.id } });
+    
+                const post = await User.findOne(posts, { where: { id: +req.params.post_id } });
+                const user = await User.findOne(users, { where: { id: post.dataValues.authorID } });
+        
+                await User.update(posts, { rating: post.dataValues.rating + 1 }, { where: { id: +req.params.post_id } });
+                await User.update(users, { rating: user.dataValues.rating + 1 }, { where: { id: post.dataValues.authorID } });
+                return res.send('You have successfully deleted the dislike');
+            }
+        }
+        catch(err) {
+            console.error(err);
+            return res.send('Some error happened while deleting the comment like or dislike');
+        }
     }
     else {
         return res.send('You have not liked this post');
