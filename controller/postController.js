@@ -7,7 +7,7 @@ const User = new UserClass();
 
 exports.getAllPosts = async (req, res) => {
     const { page } = req.query;
-    const size = 2;
+    const size = 5;
     const { limit, offset } = getPagination(page, size);
 
     if(req.query.sort) {
@@ -23,8 +23,10 @@ exports.getAllPosts = async (req, res) => {
                 return res.send('Bad request');
             }
         }
-        if(req.query.filter.status != 'inactive' && req.query.filter.status != 'active') {
-            return res.send('Bad request');
+        if(req.query.filter.status || req.query.filter.status) {
+            if(req.query.filter.status != 'inactive' && req.query.filter.status != 'active') {
+                return res.send('Bad request 4');
+            }
         }
     }
 
@@ -185,6 +187,11 @@ exports.createPost = async (req, res) => {
     try {
         await User.create(posts, { authorID: obj.id, title: req.body.title, 
             publishDate: getCurrentDate(), content: req.body.content, status: 1} );
+        let post = await User.findOne(posts, { where: { authorID: obj.id, title: req.body.title } } );
+        let categories = req.body.category.split(', ');
+        for(let i of categories) {
+            await User.create(posts_categories, { postID: post.dataValues.id, categoryID: i });
+        }
         return res.send('Post successfully created');
     }
     catch(err) {
