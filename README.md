@@ -97,6 +97,7 @@ git clone git@github.com:yarslvd/usof-backend.git   # Github repo
 
 ## Sorting and filters for `/api/posts`
 
+**Sorting**
 | Sort | Value | Description |
 | :- | :-: | :-: |
 | sort[rating] | *asc* | Sorting posts in ascending order of rating |
@@ -104,10 +105,12 @@ git clone git@github.com:yarslvd/usof-backend.git   # Github repo
 | sort[id] | *asc* | Sorting posts in ascending order of date |
 | sort[id] | *desc* | Sorting posts in descending order of date |
 
+**Filtering**
 | Filter | Value | Description |
 | :- | :-: | :-: |
 | filter[dateTo] | *your_date* | Filtering all post to a given date |
 | filter[dateFrom] | *your_date* | Filtering all post after a given date |
-| filter[status] | *your_date* | Filtering all post according to status [active, inactive] |
+| filter[status] | *status* | Filtering all post according to status [active, inactive] |
+| filter[category] | *category_id* | Filtering all post according to id of the category |
 
 **Also server-side pagination is implemented, so you can write page and its value into params, pages start from 0**
